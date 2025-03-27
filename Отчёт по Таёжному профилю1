@@ -1,0 +1,56 @@
+1) получим время отправки пакетов
+
+tshark -r 0141b1ff-83e8-4862-9e31-8ad1ba968c7d_covert-channel1.pcapng "ip.src == 192.168.114.128 and icmp" | awk '{print $2}' > time.txt
+
+2) напишем скрипт на python для расшифровки и подбора минимального времени между пакетами
+
+timer.py:
+
+ii=0.7
+while(ii<=1.2):
+	ii+=0.0001
+	print(ii,end = " --- ")
+	f = open("timing.txt", "r")
+	gp = 0.0
+	aa = ""
+	ab= ""
+
+	for line in f:
+		owo = float(line.rstrip())
+	#	print(owo - gp)
+		if(gp == 0):
+			gp = owo
+		elif(owo - gp > ii):
+			aa+="1"
+		else:
+			aa+="0"
+		gp = owo
+
+	for i in range(0,len(aa)):
+	    if(i%3==2):print(aa[i],end="")
+
+	for i in range(0,len(aa)):
+	    if(i%3!=2):ab+=aa[i]
+	f.close()
+
+	so = ""
+
+	for j in range(1,len(ab)//8+1):
+		for k in range(1,9):
+			so+=ab[j*8-k]
+
+	b=so
+	n = [b[i:i+8] for i in range(0, len(b), 8)]
+	s = ''.join(chr(int(i, 2)) for i in n)
+
+
+	print(ab)
+	print(s)
+	print()
+
+3) просмотрим все варианты и найдём флаг
+python ./timer777.py | grep nto
+
+...
+nto{C0v_t_chA5nel}nto{C0v_t_chA5nel}
+...

